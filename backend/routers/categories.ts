@@ -15,7 +15,6 @@ categoriesRouter.get('/', async (req, res) => {
 });
 
 categoriesRouter.post('/', imagesUpload.single('image'), async (req, res,next) => {
-    console.log(req.body);
     if (!req.body.title) {
         res.status(400).send("Please enter title");
         return;
@@ -33,14 +32,13 @@ categoriesRouter.post('/', imagesUpload.single('image'), async (req, res,next) =
 
         const resultHeader = result as ResultSetHeader;
 
-        const [resultOneProduct] = await connection.query('SELECT * FROM categories WHERE id = ?', [resultHeader.insertId]);
+        const [resultOneCategory] = await connection.query('SELECT * FROM categories WHERE id = ?', [resultHeader.insertId]);
 
-        const oneCategory = resultOneProduct as Category[];
+        const oneCategory = resultOneCategory as Category[];
 
         if (oneCategory.length === 0) {
             res.status(404).send("Category Not Found");
         } else {
-            console.log(req.body.title);
             res.send(oneCategory[0]);
         }
     } catch (e){
