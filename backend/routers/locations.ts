@@ -34,7 +34,7 @@ locationsRouter.get('/:id', async (req, res, next) => {
     }
 });
 
-locationsRouter.post('/', imagesUpload.single('image'), async (req, res,next) => {
+locationsRouter.post('/', async (req, res,next) => {
     if (!req.body.location_names) {
         res.status(400).send("Please enter title");
         return;
@@ -82,6 +82,22 @@ locationsRouter.delete('/:id', async (req, res, next) => {
     } catch (e) {
         next(e);
     }
+});
+
+locationsRouter.put('/:id', async (req, res, next) => {
+    const id = req.params.id;
+    const connection = await mysqlDb.getConnection();
+
+    const [oneLocationFromSql] = await connection.query('SELECT * FROM locations WHERE id = ?', [id]);
+    const location = oneLocationFromSql as Location[];
+
+
+    await connection.query('UPDATE locations SET location_names = ?, description = ? WHERE id = ?', [req.body.location_names || location[0].location_names,req.body.description || location[0].description, id]);
+
+    const [oneLocation] = await connection.query('SELECT * FROM locations WHERE id = ?', [id]);
+    const resultUpdateLocation = oneLocation as Location[];
+
+    res.send({"Location updated successfully": resultUpdateLocation[0]});
 });
 
 export default locationsRouter

@@ -1,8 +1,9 @@
 import express from "express";
-import {Subjects, SubjectWithoutId} from "../types";
+import {Location, Subjects, SubjectWithoutId} from "../types";
 import {imagesUpload} from "../multer";
 import mysqlDb from "../mysqlDB";
 import {ResultSetHeader} from "mysql2";
+import locationsRouter from "./locations";
 
 const subjectsRouter = express.Router();
 
@@ -87,6 +88,22 @@ subjectsRouter.delete('/:id', async (req, res, next) => {
     } catch (e) {
         next(e);
     }
+});
+
+subjectsRouter.put('/:id', imagesUpload.single('subject_image'), async (req, res, next) => {
+    const id = req.params.id;
+    const connection = await mysqlDb.getConnection();
+
+    const [oneSubjectFromSql] = await connection.query('SELECT * FROM subjects WHERE id = ?', [id]);
+    const subject = oneSubjectFromSql as Subjects[];
+
+
+    await connection.query('UPDATE subjects SET category_id = ?, location_id = ?, subject_title = ?, subject_description = ?, subject_image = ?  WHERE id = ?', [req.body.category_id || subject[0].category_id,req.body.location_id || subject[0].location_id,req.body.subject_title || subject[0].subject_title, req.body.subject_description || subject[0].subject_description, `images${req.file?.filename}` || subject[0].subject_image, id]);
+
+    const [oneSubject] = await connection.query('SELECT * FROM subjects WHERE id = ?', [id]);
+    const resultUpdateSubject = oneSubject as Subjects[];
+
+    res.send({"Location updated successfully": resultUpdateSubject[0]});
 });
 
 
