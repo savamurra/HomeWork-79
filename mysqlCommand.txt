@@ -1,0 +1,54 @@
+alter schema office collate utf8mb3_general_ci;
+create table categories
+(
+    id          int auto_increment
+        primary key,
+    title       varchar(255)      not null,
+    description TEXT default null null
+);
+
+create table locations
+(
+    id             int auto_increment
+        primary key,
+    location_names varchar(255)      not null,
+    description    TEXT default null null
+);
+
+create table subjects
+(
+    id                  int auto_increment
+        primary key,
+    category_id         int                        not null,
+    location_id         int                        not null,
+    subject_title       varchar(255)               not null,
+    subject_description TEXT         default null  null,
+    subject_image       varchar(255) default null  null,
+    accounting_date     DATETIME     default NOW() null,
+    constraint subjects_categories_id_fk
+        foreign key (category_id) references categories (id),
+    constraint subjects_locations_id_fk
+        foreign key (location_id) references locations (id)
+);
+
+alter table subjects
+    drop foreign key subjects_categories_id_fk;
+
+alter table subjects
+    add constraint subjects_categories_id_fk
+        foreign key (category_id) references categories (id);
+
+alter table subjects
+    drop foreign key subjects_locations_id_fk;
+
+alter table subjects
+    add constraint subjects_locations_id_fk
+        foreign key (location_id) references locations (id);
+
+
+DELETE FROM locations WHERE id = 1
+Удаление
+INSERT INTO categories  (title, description) VALUES ('Цветы','Ботаника')
+Создание
+SELECT * FROM categories
+Выбор и показ
