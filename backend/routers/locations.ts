@@ -2,7 +2,6 @@ import express from "express";
 import mysqlDB from "../mysqlDB";
 import { Location, LocationWithoutId} from "../types";
 import {ResultSetHeader} from "mysql2";
-import {imagesUpload} from "../multer";
 import mysqlDb from "../mysqlDB";
 
 
@@ -25,7 +24,7 @@ locationsRouter.get('/:id', async (req, res, next) => {
 
     try {
         if (location.length === 0) {
-            res.status(404).send("Subject not found");
+            res.status(404).send("Location not found");
         } else {
             res.send(location[0]);
         }
@@ -85,19 +84,27 @@ locationsRouter.delete('/:id', async (req, res, next) => {
 });
 
 locationsRouter.put('/:id', async (req, res, next) => {
-    const id = req.params.id;
-    const connection = await mysqlDb.getConnection();
+    try {
+        const id = req.params.id;
+        const connection = await mysqlDb.getConnection();
 
-    const [oneLocationFromSql] = await connection.query('SELECT * FROM locations WHERE id = ?', [id]);
-    const location = oneLocationFromSql as Location[];
+        const [oneLocationFromSql] = await connection.query('SELECT * FROM locations WHERE id = ?', [id]);
+        const location = oneLocationFromSql as Location[];
 
+        if (location.length === 0) {
+            res.status(404).send({error: "Location not found"});
+            return;
+        }
 
-    await connection.query('UPDATE locations SET location_names = ?, description = ? WHERE id = ?', [req.body.location_names || location[0].location_names,req.body.description || location[0].description, id]);
+        await connection.query('UPDATE locations SET location_names = ?, description = ? WHERE id = ?', [req.body.location_names || location[0].location_names,req.body.description || location[0].description, id]);
 
-    const [oneLocation] = await connection.query('SELECT * FROM locations WHERE id = ?', [id]);
-    const resultUpdateLocation = oneLocation as Location[];
+        const [oneLocation] = await connection.query('SELECT * FROM locations WHERE id = ?', [id]);
+        const resultUpdateLocation = oneLocation as Location[];
 
-    res.send({"Location updated successfully": resultUpdateLocation[0]});
+        res.send({"Location updated successfully": resultUpdateLocation[0]});
+    } catch (e) {
+        next(e);
+    }
 });
 
-export default locationsRouter
+export default locationsRouter;

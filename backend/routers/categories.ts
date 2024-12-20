@@ -1,10 +1,9 @@
 import express from "express";
 import mysqlDB from "../mysqlDB";
-import {Category, CategoryWithoutId, Location} from "../types";
+import {Category, CategoryWithoutId, } from "../types";
 import {ResultSetHeader} from "mysql2";
-import {imagesUpload} from "../multer";
 import mysqlDb from "../mysqlDB";
-import locationsRouter from "./locations";
+
 
 const categoriesRouter = express.Router();
 
@@ -25,12 +24,12 @@ categoriesRouter.get('/:id', async (req, res, next) => {
 
     try {
         if (category.length === 0) {
-            res.status(404).send("Subject not found");
+            res.status(404).send("Category not found");
         } else {
             res.send(category[0]);
         }
     } catch (e) {
-        next(e)
+        next(e);
     }
 });
 
@@ -85,19 +84,28 @@ categoriesRouter.delete('/:id', async (req, res, next) => {
 });
 
 categoriesRouter.put('/:id', async (req, res, next) => {
-    const id = req.params.id;
-    const connection = await mysqlDb.getConnection();
+    try {
+        const id = req.params.id;
+        const connection = await mysqlDb.getConnection();
 
-    const [oneCategoryFromSql] = await connection.query('SELECT * FROM categories WHERE id = ?', [id]);
-    const category = oneCategoryFromSql as Category[];
+        const [oneCategoryFromSql] = await connection.query('SELECT * FROM categories WHERE id = ?', [id]);
+        const category = oneCategoryFromSql as Category[];
 
+        if (category.length === 0) {
+            res.status(404).send({error: "Category not found"});
+            return;
+        }
 
-    await connection.query('UPDATE categories SET title = ?, description = ? WHERE id = ?', [req.body.title || category[0].title,req.body.description || category[0].description, id]);
+        await connection.query('UPDATE categories SET title = ?, description = ? WHERE id = ?', [req.body.title || category[0].title,req.body.description || category[0].description, id]);
 
-    const [oneCategory] = await connection.query('SELECT * FROM categories WHERE id = ?', [id]);
-    const resultUpdateCategory = oneCategory as Category[];
+        const [oneCategory] = await connection.query('SELECT * FROM categories WHERE id = ?', [id]);
+        const resultUpdateCategory = oneCategory as Category[];
 
-    res.send({"Category updated successfully": resultUpdateCategory[0]});
+        res.send({"Category updated successfully": resultUpdateCategory[0]});
+    } catch (e) {
+        next(e);
+    }
+
 });
 
-export default categoriesRouter
+export default categoriesRouter;
