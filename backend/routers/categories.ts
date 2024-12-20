@@ -3,6 +3,7 @@ import mysqlDB from "../mysqlDB";
 import {Category, CategoryWithoutId} from "../types";
 import {ResultSetHeader} from "mysql2";
 import {imagesUpload} from "../multer";
+import mysqlDb from "../mysqlDB";
 
 const categoriesRouter = express.Router();
 
@@ -12,6 +13,24 @@ categoriesRouter.get('/', async (req, res) => {
     const categories = result as Category[];
 
     res.send(categories);
+});
+
+categoriesRouter.get('/:id', async (req, res, next) => {
+    const id = req.params.id;
+    const connection = await mysqlDb.getConnection();
+    const [result] = await connection.query('SELECT * FROM categories WHERE id = ?', [id]);
+
+    const category = result as Category[];
+
+    try {
+        if (category.length === 0) {
+            res.status(404).send("Subject not found");
+        } else {
+            res.send(category[0]);
+        }
+    } catch (e) {
+        next(e)
+    }
 });
 
 categoriesRouter.post('/', imagesUpload.single('image'), async (req, res,next) => {
@@ -44,6 +63,24 @@ categoriesRouter.post('/', imagesUpload.single('image'), async (req, res,next) =
     } catch (e){
         next(e);
     }
-})
+});
+
+categoriesRouter.delete('/:id', async (req, res, next) => {
+    try {
+        const id = req.params.id;
+        const connection = await mysqlDb.getConnection();
+
+        const [deleteResult] = await connection.query('DELETE FROM categories WHERE id = ?', [id]);
+        const resultHeader = deleteResult as ResultSetHeader;
+
+        if (resultHeader.affectedRows > 0) {
+            res.send("Category deleted successfully");
+        } else {
+            res.status(500).send("Failed to delete category");
+        }
+    } catch (e) {
+        next(e);
+    }
+});
 
 export default categoriesRouter

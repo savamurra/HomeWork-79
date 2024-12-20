@@ -1,17 +1,37 @@
 import express from "express";
 import mysqlDB from "../mysqlDB";
-import {Category, CategoryWithoutId, LocationWithoutId} from "../types";
+import { Location, LocationWithoutId} from "../types";
 import {ResultSetHeader} from "mysql2";
 import {imagesUpload} from "../multer";
+import mysqlDb from "../mysqlDB";
+
 
 const locationsRouter = express.Router();
 
 locationsRouter.get('/', async (req, res) => {
     const connection = await mysqlDB.getConnection();
     const [result] = await connection.query('SELECT * FROM locations');
-    const locations = result as Category[];
+    const locations = result as Location[];
 
     res.send(locations);
+});
+
+locationsRouter.get('/:id', async (req, res, next) => {
+    const id = req.params.id;
+    const connection = await mysqlDb.getConnection();
+    const [result] = await connection.query('SELECT * FROM locations WHERE id = ?', [id]);
+
+    const location = result as Location[];
+
+    try {
+        if (location.length === 0) {
+            res.status(404).send("Subject not found");
+        } else {
+            res.send(location[0]);
+        }
+    } catch (e) {
+        next(e)
+    }
 });
 
 locationsRouter.post('/', imagesUpload.single('image'), async (req, res,next) => {
@@ -44,6 +64,24 @@ locationsRouter.post('/', imagesUpload.single('image'), async (req, res,next) =>
     } catch (e){
         next(e);
     }
-})
+});
+
+locationsRouter.delete('/:id', async (req, res, next) => {
+    try {
+        const id = req.params.id;
+        const connection = await mysqlDb.getConnection();
+
+        const [deleteResult] = await connection.query('DELETE FROM locations WHERE id = ?', [id]);
+        const resultHeader = deleteResult as ResultSetHeader;
+
+        if (resultHeader.affectedRows > 0) {
+            res.send("Location deleted successfully");
+        } else {
+            res.status(500).send("Failed to delete location");
+        }
+    } catch (e) {
+        next(e);
+    }
+});
 
 export default locationsRouter
